@@ -1,0 +1,66 @@
+<!-- Referencia: página de login de la app IMS (Instituto CEDIAC).
+     Es una app R Shiny (shiny 1.8.0, Bootstrap 3.4.1, shinyauthr con cookie de 7 días).
+     Guardada solo como referencia de diseño; no es código ejecutable aquí
+     (depende de un servidor Shiny y assets locales). -->
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+  <title>IMS</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!-- Dependencias originales (no disponibles aquí):
+       jquery 3.6.0, shiny 1.8.0 (css+js), font-awesome 6.4.2,
+       bootstrap 3.4.1 (+accessibility), shinyjs, js-cookie, sockjs,
+       shiny-server-client -->
+  <style>.shinyjs-hide { display: none !important; }</style>
+</head>
+<body class="bslib-page-navbar">
+  <nav class="navbar navbar-default navbar-static-top" role="navigation">
+    <div class="container-fluid">
+      <div class="navbar-header">
+        <span class="navbar-brand">IMS</span>
+      </div>
+      <div class="navbar-collapse collapse" id="navbar-collapse-1148">
+        <ul class="nav navbar-nav nav-underline shiny-tab-input" id="nav" data-tabsetid="6669">
+          <li class="active">
+            <a href="#tab-6669-1" data-toggle="tab" data-value="login">
+              <i class="fas fa-lock" role="presentation" aria-label="lock icon"></i>
+            </a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+  <div class="container-fluid">
+    <div class="tab-content" data-tabsetid="6669">
+      <div class="tab-pane active" data-value="login" id="tab-6669-1">
+        <div id="login-panel" style="width: 500px; max-width: 100%; margin: 0 auto; padding: 20px;">
+          <div class="well">
+            <h2 class="text-center" style="padding-top: 0;">Please log in</h2>
+            <div class="form-group shiny-input-container">
+              <label class="control-label" id="login-user_name-label" for="login-user_name">
+                <i class="far fa-user" role="presentation" aria-label="user icon"></i>
+                User Name
+              </label>
+              <input id="login-user_name" type="text" class="shiny-input-text form-control" value=""/>
+            </div>
+            <div class="form-group shiny-input-container">
+              <label class="control-label" id="login-password-label" for="login-password">
+                <i class="fas fa-unlock-keyhole" role="presentation" aria-label="unlock-keyhole icon"></i>
+                Password
+              </label>
+              <input id="login-password" type="password" class="shiny-input-password form-control" value=""/>
+            </div>
+            <div style="text-align: center;">
+              <button class="btn btn-default action-button btn-primary" id="login-button" style="color: white;" type="button">Log in</button>
+            </div>
+            <div id="login-error" class="shinyjs-hide">
+              <p style="color: red; font-weight: bold; padding-top: 5px;" class="text-center">Invalid username or password!</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
