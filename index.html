@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ISAT — Visor</title>
+
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.6.0/dist/maplibre-gl.css" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <span class="brand">ISAT</span>
+    <nav class="tabs">
+      <button class="tab active" data-tab="map">Mapa interactivo</button>
+      <button class="tab" data-tab="explorer" disabled title="Próximamente">Explorador de datos</button>
+    </nav>
+    <div class="topbar-right">
+      <button id="projection-toggle" class="btn" title="Cambiar entre globo 3D y mapa 2D">
+        Ver mapa 2D
+      </button>
+    </div>
+  </header>
+
+  <main id="map"></main>
+
+  <script src="https://unpkg.com/maplibre-gl@5.6.0/dist/maplibre-gl.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
