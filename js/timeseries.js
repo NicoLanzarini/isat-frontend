@@ -29,10 +29,13 @@ const tsControls = {
   wrap: document.getElementById("ts-wrap"),
   ymin: document.getElementById("ts-ymin"),
   ymax: document.getElementById("ts-ymax"),
+  tmin: document.getElementById("ts-tmin"),
+  tmax: document.getElementById("ts-tmax"),
 };
 
 let tsSeries = null; // { t: [años decimales], y: [cm], dates: [Date] }
 let tsScreenPoints = []; // posiciones en px del último render, para el hover
+let tsMeta = null; // { lat, lng } del estudio abierto, para el subtítulo
 
 // --- Serie sintética ---------------------------------------------------------
 
@@ -119,6 +122,21 @@ function theilSenRegression(t, y) {
   return { slope, intercept: median(residuals) };
 }
 
+// --- Rango de tiempo ----------------------------------------------------------
+
+// Índices de la serie cuya fecha cae dentro del rango elegido en los inputs
+// "Desde/Hasta". Un input vacío no limita ese extremo.
+function visibleIndices() {
+  const from = tsControls.tmin.value ? Date.parse(tsControls.tmin.value + "T00:00:00Z") : -Infinity;
+  const to = tsControls.tmax.value ? Date.parse(tsControls.tmax.value + "T23:59:59Z") : Infinity;
+  const indices = [];
+  for (let i = 0; i < tsSeries.dates.length; i++) {
+    const ms = tsSeries.dates[i].getTime();
+    if (ms >= from && ms <= to) indices.push(i);
+  }
+  return indices;
+}
+
 // --- Transformaciones de la serie (escala y envoltura) -----------------------
 
 function transformedY() {
@@ -154,6 +172,37 @@ function niceTicks(min, max, count) {
   return ticks;
 }
 
+// Ticks del eje de tiempo: años cuando el rango visible es amplio, meses cuando
+// el rango de tiempo elegido es corto. tMin/tMax están en años decimales.
+function xTimeTicks(tMin, tMax) {
+  const msPerYear = 365.25 * 24 * 3600 * 1000;
+  const origin = tsSeries.dates[0].getTime() - tsSeries.t[0] * msPerYear;
+  const dateToT = (ms) => (ms - origin) / msPerYear;
+  const first = new Date(origin + tMin * msPerYear);
+  const last = new Date(origin + tMax * msPerYear);
+  const span = tMax - tMin;
+  const ticks = [];
+
+  if (span >= 2.5) {
+    for (let year = first.getUTCFullYear(); year <= last.getUTCFullYear() + 1; year++) {
+      const tv = dateToT(Date.UTC(year, 0, 1));
+      if (tv >= tMin && tv <= tMax) ticks.push({ t: tv, label: String(year) });
+    }
+  } else {
+    const stepMonths = span >= 1.2 ? 3 : span >= 0.5 ? 2 : 1;
+    const cursor = new Date(Date.UTC(first.getUTCFullYear(), first.getUTCMonth(), 1));
+    while (cursor.getTime() <= last.getTime()) {
+      const tv = dateToT(cursor.getTime());
+      if (tv >= tMin && tv <= tMax) {
+        const mes = cursor.toLocaleDateString("es-AR", { month: "short", timeZone: "UTC" });
+        ticks.push({ t: tv, label: `${mes} ${cursor.getUTCFullYear()}` });
+      }
+      cursor.setUTCMonth(cursor.getUTCMonth() + stepMonths);
+    }
+  }
+  return ticks;
+}
+
 function drawTriangle(ctx, x, y, size) {
   const h = size * 0.866;
   ctx.beginPath();
@@ -165,6 +214,7 @@ function drawTriangle(ctx, x, y, size) {
 
 function renderChart() {
   if (!tsSeries) return;
+  updateSubtitle();
 
   const dpr = window.devicePixelRatio || 1;
   const cssWidth = tsCanvas.clientWidth;
@@ -181,12 +231,28 @@ function renderChart() {
   const plotW = cssWidth - margin.left - margin.right;
   const plotH = cssHeight - margin.top - margin.bottom;
 
-  const t = tsSeries.t;
-  const y = transformedY();
+  // Serie recortada al rango de tiempo elegido.
+  const indices = visibleIndices();
+  const yAll = transformedY();
+  const t = indices.map((i) => tsSeries.t[i]);
+  const y = indices.map((i) => yAll[i]);
+
+  tsScreenPoints = [];
+  if (t.length === 0) {
+    tsTooltip.hidden = true;
+    tsLegend.hidden = true;
+    ctx.fillStyle = TS_COLORS.labelInk;
+    ctx.font = "13px system-ui, sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("Sin datos en el rango de tiempo elegido", cssWidth / 2, cssHeight / 2);
+    return;
+  }
 
   // Dominios.
   const tMin = t[0];
-  const tMax = t[t.length - 1];
+  let tMax = t[t.length - 1];
+  if (tMax <= tMin) tMax = tMin + 0.02; // un solo punto en el rango
   let yMin = Math.min(...y);
   let yMax = Math.max(...y);
   const pad = (yMax - yMin || 1) * 0.08;
@@ -200,7 +266,6 @@ function renderChart() {
   const yPos = (v) => margin.top + (1 - (v - yMin) / (yMax - yMin)) * plotH;
 
   // Grilla y ticks.
-  const startYear = tsSeries.dates[0].getUTCFullYear();
   ctx.font = "11px system-ui, sans-serif";
   ctx.lineWidth = 1;
 
@@ -218,11 +283,8 @@ function renderChart() {
     ctx.fillText(String(Math.round(tick * 100) / 100), margin.left - 8, py);
   }
 
-  const endYear = tsSeries.dates[tsSeries.dates.length - 1].getUTCFullYear();
-  for (let year = startYear; year <= endYear + 1; year++) {
-    const tv = year - startYear;
-    if (tv < tMin || tv > tMax) continue;
-    const px = xPos(tv);
+  for (const tick of xTimeTicks(tMin, tMax)) {
+    const px = xPos(tick.t);
     ctx.strokeStyle = TS_COLORS.grid;
     ctx.beginPath();
     ctx.moveTo(px, margin.top);
@@ -231,7 +293,7 @@ function renderChart() {
     ctx.fillStyle = TS_COLORS.tickInk;
     ctx.textAlign = "center";
     ctx.textBaseline = "top";
-    ctx.fillText(String(year), px, margin.top + plotH + 6);
+    ctx.fillText(tick.label, px, margin.top + plotH + 6);
   }
 
   // Ejes (línea base).
@@ -247,7 +309,7 @@ function renderChart() {
   ctx.font = "12px system-ui, sans-serif";
   ctx.textAlign = "center";
   ctx.textBaseline = "bottom";
-  ctx.fillText("Tiempo [años]", margin.left + plotW / 2, cssHeight - 4);
+  ctx.fillText("Tiempo", margin.left + plotW / 2, cssHeight - 4);
   ctx.save();
   ctx.translate(12, margin.top + plotH / 2);
   ctx.rotate(-Math.PI / 2);
@@ -261,11 +323,10 @@ function renderChart() {
   ctx.clip();
 
   // Puntos: triángulos verdes con anillo de superficie.
-  tsScreenPoints = [];
   for (let i = 0; i < t.length; i++) {
     const px = xPos(t[i]);
     const py = yPos(y[i]);
-    tsScreenPoints.push({ x: px, y: py, index: i, value: y[i] });
+    tsScreenPoints.push({ x: px, y: py, index: indices[i], value: y[i] });
     drawTriangle(ctx, px, py, 8);
     ctx.fillStyle = TS_COLORS.puntos;
     ctx.strokeStyle = "#ffffff";
@@ -286,8 +347,8 @@ function renderChart() {
     ctx.stroke();
     ctx.setLineDash([]);
   };
-  if (tsControls.linear.checked) drawFit(linearRegression(t, y), TS_COLORS.lineal, false);
-  if (tsControls.theilsen.checked) drawFit(theilSenRegression(t, y), TS_COLORS.theilsen, true);
+  if (t.length >= 2 && tsControls.linear.checked) drawFit(linearRegression(t, y), TS_COLORS.lineal, false);
+  if (t.length >= 2 && tsControls.theilsen.checked) drawFit(theilSenRegression(t, y), TS_COLORS.theilsen, true);
 
   ctx.restore();
 
@@ -380,15 +441,40 @@ function studyCenter(item) {
   return [center.lng, center.lat];
 }
 
+// Velocidad media (regresión lineal sobre la serie cruda, sin escala ni
+// envoltura) dentro del rango de tiempo visible.
+function updateSubtitle() {
+  if (!tsMeta || !tsSeries) return;
+  const indices = visibleIndices();
+  let velocidad = "—";
+  if (indices.length >= 2) {
+    const { slope } = linearRegression(
+      indices.map((i) => tsSeries.t[i]),
+      indices.map((i) => tsSeries.y[i])
+    );
+    velocidad = `${slope.toFixed(2)} cm/año`;
+  }
+  document.getElementById("ts-sub").textContent =
+    `Lat ${tsMeta.lat.toFixed(4)}°, Lon ${tsMeta.lng.toFixed(4)}° — velocidad media: ${velocidad}`;
+}
+
 function openTimeseries(item) {
   window.tsLastItem = item;
   tsSeries = syntheticSeries(item.nombre);
 
   const [lng, lat] = studyCenter(item);
-  const { slope } = linearRegression(tsSeries.t, tsSeries.y);
+  tsMeta = { lat, lng };
   document.getElementById("ts-title").textContent = item.nombre;
-  document.getElementById("ts-sub").textContent =
-    `Lat ${lat.toFixed(4)}°, Lon ${lng.toFixed(4)}° — velocidad media: ${slope.toFixed(2)} cm/año`;
+
+  // El rango de tiempo arranca cubriendo toda la serie del estudio.
+  const primera = tsSeries.dates[0].toISOString().slice(0, 10);
+  const ultima = tsSeries.dates[tsSeries.dates.length - 1].toISOString().slice(0, 10);
+  for (const input of [tsControls.tmin, tsControls.tmax]) {
+    input.min = primera;
+    input.max = ultima;
+  }
+  tsControls.tmin.value = primera;
+  tsControls.tmax.value = ultima;
 
   tsPanel.hidden = false;
   renderChart();

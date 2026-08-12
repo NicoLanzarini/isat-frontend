@@ -687,6 +687,15 @@ body {
   font-size: 0.82rem;
 }
 
+.ts-range input[type="date"] {
+  padding: 0.2rem 0.3rem;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  font-size: 0.82rem;
+  font-family: inherit;
+  color: inherit;
+}
+
 .ts-note {
   font-size: 0.75rem;
   color: #999999;
