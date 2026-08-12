@@ -70,6 +70,13 @@ map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), "top-
 map.addControl(new maplibregl.GlobeControl(), "top-left");
 map.addControl(new maplibregl.ScaleControl(), "bottom-left");
 
+// Los tiles raster de OSM traen "Falkland Islands" incrustado en la imagen;
+// superponemos la denominación argentina como etiqueta propia del visor.
+const malvinasLabel = document.createElement("div");
+malvinasLabel.className = "map-label-ar";
+malvinasLabel.textContent = "Islas Malvinas";
+new maplibregl.Marker({ element: malvinasLabel }).setLngLat([-59.4, -51.75]).addTo(map);
+
 // Alternar entre globo 3D y mapa plano 2D (mercator).
 const toggleButton = document.getElementById("projection-toggle");
 let isGlobe = true;
@@ -197,6 +204,7 @@ async function loadData() {
         <div class="popup-sub">Concesión de explotación ${props.codigo ? `(${escapeHtml(props.codigo)})` : ""}</div>
         ${props.operadora ? `<div><strong>Operadora:</strong> ${escapeHtml(props.operadora)}</div>` : ""}
         ${props.participacion ? `<div><strong>Participación:</strong><br>${formatParticipacion(props.participacion)}</div>` : ""}
+        <button class="btn popup-ts-btn" data-nombre="${escapeHtml(props.nombre)}">Ver serie temporal</button>
         <div class="popup-note">Fuente: Secretaría de Energía de la Nación</div>
       </div>`;
     new maplibregl.Popup({ maxWidth: "320px" }).setLngLat(event.lngLat).setHTML(html).addTo(map);
@@ -209,6 +217,7 @@ async function loadData() {
         <div class="popup-title">${escapeHtml(props.nombre)}</div>
         <div class="popup-sub">${escapeHtml(props.tipo)}</div>
         <div>${escapeHtml(props.descripcion)}</div>
+        <button class="btn popup-ts-btn" data-nombre="${escapeHtml(props.nombre)}">Ver serie temporal</button>
       </div>`;
     new maplibregl.Popup({ maxWidth: "320px" })
       .setLngLat(event.features[0].geometry.coordinates)
@@ -255,6 +264,7 @@ function goToResult(item) {
           <div class="popup-title">${escapeHtml(props.nombre)}</div>
           <div class="popup-sub">${escapeHtml(props.tipo)}</div>
           <div>${escapeHtml(props.descripcion)}</div>
+          <button class="btn popup-ts-btn" data-nombre="${escapeHtml(props.nombre)}">Ver serie temporal</button>
         </div>`
       )
       .addTo(map);
@@ -362,7 +372,20 @@ function showToast(message) {
 }
 
 document.getElementById("btn-chart").addEventListener("click", () => {
-  showToast("Series temporales: disponible próximamente");
+  if (window.tsLastItem) {
+    openTimeseries(window.tsLastItem);
+  } else {
+    showToast("Elegí un estudio en el mapa o en el buscador");
+  }
+});
+
+// Botones "Ver serie temporal" dentro de los popups del mapa (delegación,
+// porque los popups se crean y destruyen dinámicamente).
+document.addEventListener("click", (event) => {
+  const button = event.target.closest(".popup-ts-btn");
+  if (!button) return;
+  const item = searchIndex.find((entry) => entry.nombre === button.dataset.nombre);
+  if (item) openTimeseries(item);
 });
 
 document.getElementById("btn-filters").addEventListener("click", () => {

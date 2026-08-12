@@ -113,9 +113,54 @@
     </div>
   </div>
 
+  <!-- Panel de series temporales -->
+  <div id="ts-panel" class="ts-panel" hidden>
+    <div class="ts-card" role="dialog" aria-modal="true" aria-labelledby="ts-title">
+      <div class="ts-header">
+        <div>
+          <div class="ts-title" id="ts-title">—</div>
+          <div class="ts-sub" id="ts-sub">—</div>
+        </div>
+        <button class="ts-close" id="ts-close" aria-label="Cerrar" title="Cerrar">&times;</button>
+      </div>
+      <div class="ts-legend" id="ts-legend" hidden></div>
+      <div class="ts-chart-wrap">
+        <canvas id="ts-canvas"></canvas>
+        <div class="ts-tooltip" id="ts-tooltip" hidden></div>
+      </div>
+      <div class="ts-controls">
+        <label><input type="checkbox" id="ts-linear" /> Regresión lineal</label>
+        <label><input type="checkbox" id="ts-theilsen" /> Regresión Theil-Sen</label>
+        <label><input type="checkbox" id="ts-hist" /> Histograma marginal</label>
+      </div>
+      <div class="ts-controls">
+        <label class="ts-slider">
+          Escala
+          <input type="range" id="ts-scale" min="1" max="10" step="1" value="1" />
+          <output id="ts-scale-out">1</output>
+        </label>
+        <label class="ts-slider">
+          Envoltura [cm]
+          <input type="range" id="ts-wrap" min="0" max="10" step="1" value="0" />
+          <output id="ts-wrap-out">0</output>
+        </label>
+        <label class="ts-range">
+          Escala del gráfico [cm]
+          <input type="number" id="ts-ymin" placeholder="auto" min="-150" max="150" step="1" />
+          <span>a</span>
+          <input type="number" id="ts-ymax" placeholder="auto" min="-150" max="150" step="1" />
+        </label>
+      </div>
+      <div class="ts-note">
+        Serie sintética de demostración — se reemplazará por datos reales del backend SISAR.
+      </div>
+    </div>
+  </div>
+
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
   <script src="https://unpkg.com/maplibre-gl@5.6.0/dist/maplibre-gl.js"></script>
   <script src="js/main.js"></script>
+  <script src="js/timeseries.js"></script>
 </body>
 </html>
