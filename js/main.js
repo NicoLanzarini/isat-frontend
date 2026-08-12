@@ -4,7 +4,20 @@
 const INITIAL_CENTER = [-68.5, -34.6];
 const INITIAL_ZOOM = 1.5;
 
-// Capas base disponibles en el selector. Las de Esri exigen atribución propia.
+// Base OSM vectorial (OpenFreeMap): a diferencia del raster, las etiquetas son
+// texto que controla el visor, y se fuerzan al español ("Islas Malvinas",
+// "Puerto Argentino", etc.) vía la expresión SPANISH_NAME.
+const OSM_VECTOR_STYLE_URL = "https://tiles.openfreemap.org/styles/liberty";
+const SPANISH_NAME = [
+  "case",
+  // Las teselas no traen name:es para Stanley; se aplica la denominación oficial.
+  ["==", ["get", "name"], "Stanley"],
+  "Puerto Argentino",
+  ["coalesce", ["get", "name:es"], ["get", "name:latin"], ["get", "name"]],
+];
+
+// Capas base raster. OSM queda solo como fallback si el estilo vectorial no
+// carga; las de Esri exigen atribución propia.
 const BASE_LAYERS = {
   osm: {
     tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
@@ -28,29 +41,63 @@ const BASE_LAYERS = {
   },
 };
 
-const sources = {};
-const layers = [];
-for (const [id, def] of Object.entries(BASE_LAYERS)) {
-  sources[id] = {
+// Ids de las capas que componen la base "osm": las del estilo vectorial cuando
+// carga, o la capa raster de fallback.
+let osmLayerIds = ["osm"];
+let osmEsVectorial = false;
+
+function makeRasterSource(def) {
+  return {
     type: "raster",
     tiles: def.tiles,
     tileSize: 256,
     maxzoom: def.maxzoom,
     attribution: def.attribution,
   };
-  layers.push({
+}
+
+function makeRasterLayer(id, visible) {
+  return {
     id,
     type: "raster",
     source: id,
-    layout: { visibility: id === "osm" ? "visible" : "none" },
-  });
+    layout: { visibility: visible ? "visible" : "none" },
+  };
 }
 
-const map = new maplibregl.Map({
-  container: "map",
-  center: INITIAL_CENTER,
-  zoom: INITIAL_ZOOM,
-  style: {
+async function buildStyle() {
+  const sources = {};
+  const layers = [];
+  let glyphs;
+  let sprite;
+  try {
+    const resp = await fetch(OSM_VECTOR_STYLE_URL);
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const vector = await resp.json();
+    Object.assign(sources, vector.sources);
+    for (const layer of vector.layers) {
+      const textField = layer.layout && layer.layout["text-field"];
+      if (textField && JSON.stringify(textField).includes("name")) {
+        layer.layout["text-field"] = SPANISH_NAME;
+      }
+      layers.push(layer);
+    }
+    osmLayerIds = vector.layers
+      .filter((layer) => !(layer.layout && layer.layout.visibility === "none"))
+      .map((layer) => layer.id);
+    osmEsVectorial = true;
+    glyphs = vector.glyphs;
+    sprite = vector.sprite;
+  } catch (error) {
+    console.warn("Estilo vectorial no disponible; se usa el raster OSM:", error);
+    sources.osm = makeRasterSource(BASE_LAYERS.osm);
+    layers.push(makeRasterLayer("osm", true));
+  }
+  for (const id of ["satellite", "topo"]) {
+    sources[id] = makeRasterSource(BASE_LAYERS[id]);
+    layers.push(makeRasterLayer(id, false));
+  }
+  const style = {
     version: 8,
     projection: { type: "globe" },
     sources,
@@ -62,20 +109,54 @@ const map = new maplibregl.Map({
       anchor: "map",
       position: [1.5, 90, 80],
     },
-  },
-  attributionControl: { compact: false },
-});
+  };
+  if (glyphs) style.glyphs = glyphs;
+  if (sprite) style.sprite = sprite;
+  return style;
+}
 
-map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), "top-left");
-map.addControl(new maplibregl.GlobeControl(), "top-left");
-map.addControl(new maplibregl.ScaleControl(), "bottom-left");
+// El mapa se crea de forma asíncrona (hay que buscar el estilo vectorial);
+// el resto del archivo solo registra handlers, que corren cuando ya existe.
+let map;
+let malvinasMarker;
 
-// Los tiles raster de OSM traen "Falkland Islands" incrustado en la imagen;
-// superponemos la denominación argentina como etiqueta propia del visor.
-const malvinasLabel = document.createElement("div");
-malvinasLabel.className = "map-label-ar";
-malvinasLabel.textContent = "Islas Malvinas";
-new maplibregl.Marker({ element: malvinasLabel }).setLngLat([-59.4, -51.75]).addTo(map);
+// Etiqueta propia sobre las bases raster, que traen el nombre en inglés
+// incrustado en la imagen; en la base vectorial el nombre ya sale en español.
+function actualizarMarcadorMalvinas(base) {
+  const redundante = base === "osm" && osmEsVectorial;
+  malvinasMarker.getElement().style.display = redundante ? "none" : "";
+}
+
+(async () => {
+  map = new maplibregl.Map({
+    container: "map",
+    center: INITIAL_CENTER,
+    zoom: INITIAL_ZOOM,
+    style: await buildStyle(),
+    attributionControl: { compact: false },
+  });
+
+  map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), "top-left");
+  map.addControl(new maplibregl.GlobeControl(), "top-left");
+  map.addControl(new maplibregl.ScaleControl(), "bottom-left");
+
+  const malvinasLabel = document.createElement("div");
+  malvinasLabel.className = "map-label-ar";
+  malvinasLabel.textContent = "Islas Malvinas";
+  malvinasMarker = new maplibregl.Marker({ element: malvinasLabel })
+    .setLngLat([-59.4, -51.75])
+    .addTo(map);
+  actualizarMarcadorMalvinas(
+    document.querySelector("input[name='base-layer']:checked")?.value || "osm"
+  );
+
+  map.on("load", () => {
+    loadData().catch((error) => {
+      console.error("Error cargando datos:", error);
+      showToast("No se pudieron cargar los datos de concesiones");
+    });
+  });
+})();
 
 // Alternar entre globo 3D y mapa plano 2D (mercator).
 const toggleButton = document.getElementById("projection-toggle");
@@ -231,13 +312,6 @@ async function loadData() {
   }
 }
 
-map.on("load", () => {
-  loadData().catch((error) => {
-    console.error("Error cargando datos:", error);
-    showToast("No se pudieron cargar los datos de concesiones");
-  });
-});
-
 // --- Buscador de estudios ----------------------------------------------------
 
 const searchInput = document.getElementById("search-input");
@@ -336,9 +410,15 @@ document.addEventListener("click", (event) => {
 
 for (const radio of layerSwitcher.querySelectorAll("input[name='base-layer']")) {
   radio.addEventListener("change", () => {
-    for (const id of Object.keys(BASE_LAYERS)) {
-      map.setLayoutProperty(id, "visibility", id === radio.value ? "visible" : "none");
+    const grupos = { osm: osmLayerIds, satellite: ["satellite"], topo: ["topo"] };
+    for (const [base, ids] of Object.entries(grupos)) {
+      for (const id of ids) {
+        if (map.getLayer(id)) {
+          map.setLayoutProperty(id, "visibility", base === radio.value ? "visible" : "none");
+        }
+      }
     }
+    actualizarMarcadorMalvinas(radio.value);
   });
 }
 
