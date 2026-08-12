@@ -8,12 +8,18 @@
   <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.6.0/dist/maplibre-gl.css" />
   <link rel="stylesheet" href="css/style.css" />
 </head>
-<body>
+<body class="logged-out">
   <header class="topbar">
     <span class="brand">ISAT</span>
     <nav class="tabs">
-      <button class="tab active" data-tab="map">Mapa interactivo</button>
-      <button class="tab" data-tab="explorer" disabled title="Próximamente">Explorador de datos</button>
+      <button class="tab tab-lock" title="Iniciar sesión" aria-label="Iniciar sesión">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="4" y="11" width="16" height="10" rx="2" />
+          <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+        </svg>
+      </button>
+      <button class="tab active tab-app" data-tab="map">Mapa interactivo</button>
+      <button class="tab tab-app" data-tab="explorer" disabled title="Próximamente">Explorador de datos</button>
     </nav>
     <div class="search" id="search">
       <svg class="search-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
@@ -33,10 +39,47 @@
       <button id="projection-toggle" class="btn" title="Cambiar entre globo 3D y mapa 2D">
         Ver mapa 2D
       </button>
+      <span id="user-chip" class="user-chip"></span>
+      <button id="logout-btn" class="btn btn-logout">Cerrar sesión</button>
     </div>
   </header>
 
   <main id="map"></main>
+
+  <!-- Pantalla de inicio de sesión -->
+  <div id="login-overlay" class="login-overlay">
+    <form id="login-form" class="login-well" novalidate>
+      <h2 class="login-title">Iniciá sesión</h2>
+      <label class="login-field" for="login-user">
+        Usuario
+        <div class="login-input-wrap">
+          <svg class="login-input-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <circle cx="12" cy="8" r="4" />
+            <path d="M4 21c0-4 3.6-6 8-6s8 2 8 6" />
+          </svg>
+          <input type="text" id="login-user" autocomplete="username" />
+        </div>
+      </label>
+      <label class="login-field" for="login-token">
+        Token de acceso
+        <div class="login-input-wrap">
+          <svg class="login-input-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="4" y="11" width="16" height="10" rx="2" />
+            <path d="M8 11V7a4 4 0 0 1 8 0" />
+          </svg>
+          <input type="password" id="login-token" autocomplete="current-password" />
+        </div>
+      </label>
+      <label class="login-remember">
+        <input type="checkbox" id="login-remember" /> Mantener la sesión iniciada (7 días)
+      </label>
+      <button type="submit" class="login-btn">Iniciar sesión</button>
+      <div id="login-error" class="login-error" role="alert" hidden>Ingresá usuario y token de acceso.</div>
+      <div class="login-note">
+        El token de acceso lo provee el administrador del sistema (API SISAR).
+      </div>
+    </form>
+  </div>
 
   <!-- Selector de capas (arriba a la derecha) -->
   <div id="layer-switcher" class="layer-switcher">
@@ -160,6 +203,7 @@
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
   <script src="https://unpkg.com/maplibre-gl@5.6.0/dist/maplibre-gl.js"></script>
+  <script src="js/auth.js"></script>
   <script src="js/main.js"></script>
   <script src="js/timeseries.js"></script>
 </body>

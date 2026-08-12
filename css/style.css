@@ -70,6 +70,157 @@ body {
   margin-left: auto;
 }
 
+/* --- Sesión ----------------------------------------------------------------- */
+
+.user-chip {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #555555;
+}
+
+.btn-logout {
+  background: #c0392b;
+  border-color: #c0392b;
+  color: #ffffff;
+}
+
+.btn-logout:hover {
+  background: #a93226;
+}
+
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.tab-lock {
+  display: none;
+  align-items: center;
+}
+
+/* Estado sin sesión: solo se ven la marca, el candado y el login. */
+.logged-out .tab-lock {
+  display: flex;
+}
+
+.logged-out .tab-app,
+.logged-out .topbar-right,
+.logged-out .search,
+.logged-out .layer-switcher,
+.logged-out .side-buttons,
+.logged-out .legends {
+  display: none;
+}
+
+.login-overlay {
+  display: none;
+  position: fixed;
+  top: var(--topbar-height);
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #f5f5f3;
+  z-index: 15;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 8vh 1rem 1rem;
+}
+
+.logged-out .login-overlay {
+  display: flex;
+}
+
+.login-well {
+  width: min(500px, 100%);
+  padding: 2rem 2.25rem;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.login-title {
+  text-align: center;
+  font-size: 1.3rem;
+  font-weight: 600;
+}
+
+.login-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.login-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.login-input-icon {
+  position: absolute;
+  left: 10px;
+  color: #888888;
+  pointer-events: none;
+}
+
+.login-input-wrap input {
+  width: 100%;
+  padding: 0.5rem 0.75rem 0.5rem 2.1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  font-size: 0.9rem;
+  font-weight: 400;
+}
+
+.login-input-wrap input:focus {
+  outline: 2px solid #2a78d6;
+  outline-offset: -1px;
+}
+
+.login-remember {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.login-btn {
+  padding: 0.55rem 1rem;
+  border: none;
+  border-radius: 4px;
+  background: #2a78d6;
+  color: #ffffff;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.login-btn:hover {
+  background: #1c5cab;
+}
+
+.login-error {
+  color: #c0392b;
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+.login-note {
+  color: #999999;
+  font-size: 0.78rem;
+  text-align: center;
+  border-top: 1px solid var(--color-border);
+  padding-top: 0.75rem;
+}
+
 /* --- Buscador -------------------------------------------------------------- */
 
 .search {
@@ -393,6 +544,10 @@ body {
 }
 
 /* --- Panel de series temporales --------------------------------------------- */
+
+.ts-panel[hidden] {
+  display: none;
+}
 
 .ts-panel {
   position: fixed;
