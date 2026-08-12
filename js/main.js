@@ -5,11 +5,18 @@ const INITIAL_CENTER = [-68.5, -34.6];
 const INITIAL_ZOOM = 1.5;
 
 // Capas base disponibles en el selector. Las de Esri exigen atribución propia.
+// Argenmap (IGN) reemplaza a OSM: misma cartografía de base pero con la
+// toponimia oficial argentina, por lo que rotula "Islas Malvinas" y no
+// muestra "Falkland Islands".
 const BASE_LAYERS = {
-  osm: {
-    tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
-    maxzoom: 19,
-    attribution: "&copy; <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap</a>",
+  argenmap: {
+    tiles: [
+      "https://wms.ign.gob.ar/geoserver/gwc/service/tms/1.0.0/capabaseargenmap@EPSG:3857@png/{z}/{x}/{y}.png",
+    ],
+    scheme: "tms",
+    maxzoom: 18,
+    attribution:
+      "<a href='https://www.ign.gob.ar/'>Instituto Geográfico Nacional</a> &mdash; &copy; <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap</a>",
   },
   satellite: {
     tiles: [
@@ -38,11 +45,14 @@ for (const [id, def] of Object.entries(BASE_LAYERS)) {
     maxzoom: def.maxzoom,
     attribution: def.attribution,
   };
+  if (def.scheme) {
+    sources[id].scheme = def.scheme;
+  }
   layers.push({
     id,
     type: "raster",
     source: id,
-    layout: { visibility: id === "osm" ? "visible" : "none" },
+    layout: { visibility: id === "argenmap" ? "visible" : "none" },
   });
 }
 
@@ -70,12 +80,24 @@ map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), "top-
 map.addControl(new maplibregl.GlobeControl(), "top-left");
 map.addControl(new maplibregl.ScaleControl(), "bottom-left");
 
-// Los tiles raster de OSM traen "Falkland Islands" incrustado en la imagen;
-// superponemos la denominación argentina como etiqueta propia del visor.
+// Etiqueta propia "Islas Malvinas": solo hace falta en la vista satelital,
+// que no trae toponimia (Argenmap ya rotula las islas en sus tiles, y en el
+// topográfico de Esri se superpondría con el nombre incrustado en la imagen).
 const malvinasLabel = document.createElement("div");
 malvinasLabel.className = "map-label-ar";
 malvinasLabel.textContent = "Islas Malvinas";
 new maplibregl.Marker({ element: malvinasLabel }).setLngLat([-59.4, -51.75]).addTo(map);
+
+let currentBaseLayer = "argenmap";
+const MALVINAS_LABEL_MIN_ZOOM = 3;
+
+function refreshMalvinasLabel() {
+  const visible = currentBaseLayer === "satellite" && map.getZoom() >= MALVINAS_LABEL_MIN_ZOOM;
+  malvinasLabel.style.display = visible ? "" : "none";
+}
+
+map.on("zoom", refreshMalvinasLabel);
+refreshMalvinasLabel();
 
 // Alternar entre globo 3D y mapa plano 2D (mercator).
 const toggleButton = document.getElementById("projection-toggle");
@@ -339,6 +361,8 @@ for (const radio of layerSwitcher.querySelectorAll("input[name='base-layer']")) 
     for (const id of Object.keys(BASE_LAYERS)) {
       map.setLayoutProperty(id, "visibility", id === radio.value ? "visible" : "none");
     }
+    currentBaseLayer = radio.value;
+    refreshMalvinasLabel();
   });
 }
 
