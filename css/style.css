@@ -78,16 +78,6 @@ body {
   color: #555555;
 }
 
-.btn-logout {
-  background: #c0392b;
-  border-color: #c0392b;
-  color: #ffffff;
-}
-
-.btn-logout:hover {
-  background: #a93226;
-}
-
 .topbar-right {
   display: flex;
   align-items: center;
@@ -313,6 +303,17 @@ body {
 
 .btn:hover {
   background: #f2f2f2;
+}
+
+/* Después de .btn para ganarle la cascada (misma especificidad). */
+.btn-logout {
+  background: #c0392b;
+  border-color: #c0392b;
+  color: #ffffff;
+}
+
+.btn-logout:hover {
+  background: #a93226;
 }
 
 #map {
