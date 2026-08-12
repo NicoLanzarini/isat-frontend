@@ -1,0 +1,122 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-68.99, -38.6] },
+      "properties": {
+        "nombre": "Vaca Muerta",
+        "tipo": "Yacimiento petrolero",
+        "descripcion": "Formación de shale oil/gas en la cuenca Neuquina, una de las mayores reservas no convencionales del mundo. Zona de alto interés para monitoreo de subsidencia por extracción."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-70.5842, -36.0722] },
+      "properties": {
+        "nombre": "Laguna del Maule",
+        "tipo": "Volcán",
+        "descripcion": "Complejo volcánico en la frontera argentino-chilena con una de las tasas de inflación superficial más altas del mundo (~20 cm/año medidos por InSAR)."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-71.169, -37.856] },
+      "properties": {
+        "nombre": "Volcán Copahue",
+        "tipo": "Volcán",
+        "descripcion": "Estratovolcán activo en Neuquén, con erupciones recientes (2012-2016) y actividad fumarólica permanente."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-70.42, -36.63] },
+      "properties": {
+        "nombre": "Cerro Domuyo",
+        "tipo": "Volcán",
+        "descripcion": "Techo de la Patagonia (4709 m), sistema geotermal activo en Neuquén con alzamiento detectado por InSAR."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-71.5, -39.633] },
+      "properties": {
+        "nombre": "Volcán Lanín",
+        "tipo": "Volcán",
+        "descripcion": "Estratovolcán en la frontera Neuquén-Chile (3776 m), cubierto de glaciares."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-70.574, -35.24] },
+      "properties": {
+        "nombre": "Volcán Peteroa",
+        "tipo": "Volcán",
+        "descripcion": "Complejo volcánico Planchón-Peteroa en la frontera Mendoza-Chile, con erupciones freáticas recientes."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-69.8, -33.4] },
+      "properties": {
+        "nombre": "Volcán Tupungatito",
+        "tipo": "Volcán",
+        "descripcion": "Volcán activo más cercano a la ciudad de Mendoza, en la frontera con Chile (5682 m)."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-69.833, -34.161] },
+      "properties": {
+        "nombre": "Volcán Maipo",
+        "tipo": "Volcán",
+        "descripcion": "Estratovolcán en la caldera Diamante (Mendoza-Chile), con la laguna del Diamante a su pie."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-69.244, -36.42] },
+      "properties": {
+        "nombre": "Payún Matrú",
+        "tipo": "Volcán",
+        "descripcion": "Gran caldera en el campo volcánico de La Payunia (Mendoza), una de las mayores concentraciones de conos basálticos del planeta."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-67.72, -26.77] },
+      "properties": {
+        "nombre": "Cerro Blanco",
+        "tipo": "Volcán",
+        "descripcion": "Caldera en Catamarca con subsidencia sostenida detectada por InSAR, asociada a un sistema magmático en enfriamiento."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-68.25, -24.4] },
+      "properties": {
+        "nombre": "Volcán Socompa",
+        "tipo": "Volcán",
+        "descripcion": "Estratovolcán en la frontera Salta-Chile (6051 m), famoso por su avalancha de escombros gigante."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-66.483, -24.05] },
+      "properties": {
+        "nombre": "Volcán Tuzgle",
+        "tipo": "Volcán",
+        "descripcion": "Volcán del altiplano de Jujuy (5486 m), con sistema geotermal asociado."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-68.541, -27.109] },
+      "properties": {
+        "nombre": "Ojos del Salado",
+        "tipo": "Volcán",
+        "descripcion": "El volcán activo más alto del mundo (6893 m), en la frontera Catamarca-Chile."
+      }
+    }
+  ]
+}

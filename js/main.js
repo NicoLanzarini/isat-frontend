@@ -84,6 +84,228 @@ toggleButton.addEventListener("click", () => {
   applyProjection();
 });
 
+// --- Datos: concesiones y puntos de interés ----------------------------------
+
+// Colores por tipo de terreno, consistentes con la leyenda.
+const TIPO_COLORS = {
+  "Yacimiento petrolero": "#8e44ad",
+  Deslizamiento: "#d35400",
+  Glaciar: "#2980b9",
+  Volcán: "#c0392b",
+  Otro: "#7f8c8d",
+};
+
+// Índice para el buscador: se llena cuando cargan los GeoJSON.
+const searchIndex = [];
+
+function escapeHtml(text) {
+  const div = document.createElement("div");
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+// El campo "participacion" viene de la fuente con separadores "<br>".
+function formatParticipacion(raw) {
+  return raw
+    .split(/<br\s*\/?>/i)
+    .map((part) => escapeHtml(part.trim()))
+    .filter(Boolean)
+    .join("<br>");
+}
+
+function featureBounds(geometry) {
+  const bounds = new maplibregl.LngLatBounds();
+  const extend = (coords) => {
+    if (typeof coords[0] === "number") {
+      bounds.extend(coords);
+    } else {
+      coords.forEach(extend);
+    }
+  };
+  extend(geometry.coordinates);
+  return bounds;
+}
+
+async function loadData() {
+  const [concesiones, pois] = await Promise.all([
+    fetch("data/concesiones.geojson").then((r) => r.json()),
+    fetch("data/puntos_interes.geojson").then((r) => r.json()),
+  ]);
+
+  map.addSource("concesiones", { type: "geojson", data: concesiones });
+  map.addSource("poi", { type: "geojson", data: pois });
+
+  map.addLayer({
+    id: "concesiones-fill",
+    type: "fill",
+    source: "concesiones",
+    paint: { "fill-color": "#1f7a4d", "fill-opacity": 0.15 },
+  });
+  map.addLayer({
+    id: "concesiones-line",
+    type: "line",
+    source: "concesiones",
+    paint: { "line-color": "#1f7a4d", "line-width": 1.2 },
+  });
+  map.addLayer({
+    id: "poi-circles",
+    type: "circle",
+    source: "poi",
+    paint: {
+      "circle-radius": 7,
+      "circle-color": [
+        "match",
+        ["get", "tipo"],
+        ...Object.entries(TIPO_COLORS).flat(),
+        TIPO_COLORS.Otro,
+      ],
+      "circle-stroke-color": "#ffffff",
+      "circle-stroke-width": 2,
+    },
+  });
+
+  // Índice de búsqueda: concesiones + puntos de interés.
+  for (const feature of concesiones.features) {
+    const { nombre, codigo, operadora } = feature.properties;
+    searchIndex.push({
+      nombre,
+      subtitulo: operadora || "Concesión de explotación",
+      claves: `${nombre} ${codigo} ${operadora}`,
+      color: "#1f7a4d",
+      feature,
+      esPunto: false,
+    });
+  }
+  for (const feature of pois.features) {
+    const { nombre, tipo } = feature.properties;
+    searchIndex.push({
+      nombre,
+      subtitulo: tipo,
+      claves: `${nombre} ${tipo}`,
+      color: TIPO_COLORS[tipo] || TIPO_COLORS.Otro,
+      feature,
+      esPunto: true,
+    });
+  }
+
+  // Popups al hacer clic.
+  map.on("click", "concesiones-fill", (event) => {
+    const props = event.features[0].properties;
+    const html = `
+      <div class="popup">
+        <div class="popup-title">${escapeHtml(props.nombre)}</div>
+        <div class="popup-sub">Concesión de explotación ${props.codigo ? `(${escapeHtml(props.codigo)})` : ""}</div>
+        ${props.operadora ? `<div><strong>Operadora:</strong> ${escapeHtml(props.operadora)}</div>` : ""}
+        ${props.participacion ? `<div><strong>Participación:</strong><br>${formatParticipacion(props.participacion)}</div>` : ""}
+        <div class="popup-note">Fuente: Secretaría de Energía de la Nación</div>
+      </div>`;
+    new maplibregl.Popup({ maxWidth: "320px" }).setLngLat(event.lngLat).setHTML(html).addTo(map);
+  });
+
+  map.on("click", "poi-circles", (event) => {
+    const props = event.features[0].properties;
+    const html = `
+      <div class="popup">
+        <div class="popup-title">${escapeHtml(props.nombre)}</div>
+        <div class="popup-sub">${escapeHtml(props.tipo)}</div>
+        <div>${escapeHtml(props.descripcion)}</div>
+      </div>`;
+    new maplibregl.Popup({ maxWidth: "320px" })
+      .setLngLat(event.features[0].geometry.coordinates)
+      .setHTML(html)
+      .addTo(map);
+  });
+
+  for (const layerId of ["concesiones-fill", "poi-circles"]) {
+    map.on("mouseenter", layerId, () => (map.getCanvas().style.cursor = "pointer"));
+    map.on("mouseleave", layerId, () => (map.getCanvas().style.cursor = ""));
+  }
+}
+
+map.on("load", () => {
+  loadData().catch((error) => {
+    console.error("Error cargando datos:", error);
+    showToast("No se pudieron cargar los datos de concesiones");
+  });
+});
+
+// --- Buscador de estudios ----------------------------------------------------
+
+const searchInput = document.getElementById("search-input");
+const searchResults = document.getElementById("search-results");
+
+function normalize(text) {
+  return text
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+}
+
+function goToResult(item) {
+  searchResults.hidden = true;
+  searchInput.value = item.nombre;
+  if (item.esPunto) {
+    const coords = item.feature.geometry.coordinates;
+    map.flyTo({ center: coords, zoom: 9 });
+    const props = item.feature.properties;
+    new maplibregl.Popup({ maxWidth: "320px" })
+      .setLngLat(coords)
+      .setHTML(
+        `<div class="popup">
+          <div class="popup-title">${escapeHtml(props.nombre)}</div>
+          <div class="popup-sub">${escapeHtml(props.tipo)}</div>
+          <div>${escapeHtml(props.descripcion)}</div>
+        </div>`
+      )
+      .addTo(map);
+  } else {
+    map.fitBounds(featureBounds(item.feature.geometry), { padding: 80, maxZoom: 11 });
+  }
+}
+
+function renderResults(query) {
+  const term = normalize(query.trim());
+  if (term.length < 2) {
+    searchResults.hidden = true;
+    searchResults.innerHTML = "";
+    return;
+  }
+  const matches = searchIndex.filter((item) => normalize(item.claves).includes(term)).slice(0, 8);
+  if (matches.length === 0) {
+    searchResults.innerHTML = "<li class='search-empty'>Sin resultados</li>";
+    searchResults.hidden = false;
+    return;
+  }
+  searchResults.innerHTML = "";
+  for (const item of matches) {
+    const li = document.createElement("li");
+    li.innerHTML = `<span class="legend-dot" style="--dot: ${item.color}"></span>
+      <span class="search-name">${escapeHtml(item.nombre)}</span>
+      <span class="search-sub">${escapeHtml(item.subtitulo)}</span>`;
+    li.addEventListener("click", () => goToResult(item));
+    searchResults.appendChild(li);
+  }
+  searchResults.hidden = false;
+}
+
+searchInput.addEventListener("input", () => renderResults(searchInput.value));
+searchInput.addEventListener("focus", () => renderResults(searchInput.value));
+
+searchInput.addEventListener("keydown", (event) => {
+  if (event.key === "Enter") {
+    const first = searchResults.querySelector("li:not(.search-empty)");
+    if (first) first.click();
+  } else if (event.key === "Escape") {
+    searchResults.hidden = true;
+  }
+});
+
+document.addEventListener("click", (event) => {
+  if (!document.getElementById("search").contains(event.target)) {
+    searchResults.hidden = true;
+  }
+});
+
 // --- Selector de capas -------------------------------------------------------
 
 const layerSwitcher = document.getElementById("layer-switcher");
@@ -110,6 +332,23 @@ for (const radio of layerSwitcher.querySelectorAll("input[name='base-layer']")) 
   });
 }
 
+// Superposiciones: cada checkbox controla un grupo de capas.
+const OVERLAY_LAYERS = {
+  "overlay-concesiones": ["concesiones-fill", "concesiones-line"],
+  "overlay-poi": ["poi-circles"],
+};
+
+for (const [checkboxId, layerIds] of Object.entries(OVERLAY_LAYERS)) {
+  document.getElementById(checkboxId).addEventListener("change", (event) => {
+    const visibility = event.target.checked ? "visible" : "none";
+    for (const layerId of layerIds) {
+      if (map.getLayer(layerId)) {
+        map.setLayoutProperty(layerId, "visibility", visibility);
+      }
+    }
+  });
+}
+
 // --- Botones flotantes -------------------------------------------------------
 
 const toast = document.getElementById("toast");
@@ -130,7 +369,16 @@ document.getElementById("btn-filters").addEventListener("click", () => {
   showToast("Filtros: disponible próximamente");
 });
 
-document.getElementById("btn-refresh").addEventListener("click", () => {
-  // Cuando el backend esté conectado, acá se recargarán los datos de la API.
-  showToast("Sin datos para refrescar todavía");
+document.getElementById("btn-refresh").addEventListener("click", async () => {
+  try {
+    const [concesiones, pois] = await Promise.all([
+      fetch("data/concesiones.geojson").then((r) => r.json()),
+      fetch("data/puntos_interes.geojson").then((r) => r.json()),
+    ]);
+    map.getSource("concesiones").setData(concesiones);
+    map.getSource("poi").setData(pois);
+    showToast("Datos actualizados");
+  } catch {
+    showToast("No se pudieron refrescar los datos");
+  }
 });

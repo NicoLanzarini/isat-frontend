@@ -70,6 +70,87 @@ body {
   margin-left: auto;
 }
 
+/* --- Buscador -------------------------------------------------------------- */
+
+.search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 0 1 340px;
+  margin-left: 0.5rem;
+}
+
+.search-icon {
+  position: absolute;
+  left: 10px;
+  color: #888888;
+  pointer-events: none;
+}
+
+#search-input {
+  width: 100%;
+  padding: 0.4rem 0.75rem 0.4rem 2rem;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  font-size: 0.85rem;
+  background: #fafafa;
+}
+
+#search-input:focus {
+  outline: 2px solid var(--color-accent);
+  outline-offset: -1px;
+  background: var(--color-bg);
+}
+
+.search-results {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  max-height: 320px;
+  overflow-y: auto;
+  list-style: none;
+  background: var(--color-bg);
+  border-radius: 4px;
+  box-shadow: var(--panel-shadow);
+  z-index: 30;
+}
+
+.search-results li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.75rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.search-results li:hover {
+  background: #f2f2f2;
+}
+
+.search-results .search-empty {
+  color: #999999;
+  cursor: default;
+}
+
+.search-name {
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.search-sub {
+  margin-left: auto;
+  color: #999999;
+  font-size: 0.75rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 45%;
+}
+
 .btn {
   padding: 0.4rem 0.9rem;
   border: 1px solid var(--color-border);
@@ -263,6 +344,35 @@ body {
   border-radius: 50%;
   background: var(--dot);
   flex-shrink: 0;
+}
+
+/* --- Popups ---------------------------------------------------------------- */
+
+.popup {
+  font-family: inherit;
+  font-size: 0.83rem;
+  line-height: 1.4;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.popup-title {
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.popup-sub {
+  color: #777777;
+  font-size: 0.78rem;
+  margin-top: -0.2rem;
+}
+
+.popup-note {
+  color: #999999;
+  font-size: 0.72rem;
+  border-top: 1px solid var(--color-border);
+  padding-top: 0.3rem;
 }
 
 /* --- Toast ----------------------------------------------------------------- */
